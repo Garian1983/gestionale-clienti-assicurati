@@ -6,6 +6,8 @@
   <title>Gestionale Clienti Assicurati</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <style>
     body{background:#f5f9ff;color:#003366;padding:2rem;font-family:'Segoe UI',sans-serif}
     h1{color:#ff6600}
@@ -14,11 +16,19 @@
     .hidden{display:none}
     .whatsapp-icon{color:#25D366;cursor:pointer;font-size:1.3rem}
     .sortable{cursor:pointer}
+    .dashboard .card{background:#f0f6ff;border:none;border-left:5px solid #ff6600}
   </style>
 </head>
 <body>
 <div class="container">
   <h1 class="mb-4">Gestionale Clienti Assicurati</h1>
+
+  <!-- DASHBOARD -->
+  <div class="dashboard row text-center section">
+    <div class="col-md-4"><div class="card p-3"><h6>Totale Clienti</h6><h2 id="tot-clienti">0</h2></div></div>
+    <div class="col-md-4"><div class="card p-3"><h6>In Scadenza 30 gg</h6><h2 id="tot-scadenza">0</h2></div></div>
+    <div class="col-md-4"><div class="card p-3"><h6>Premi Lordi (€)</h6><h2 id="tot-premio">0</h2></div></div>
+  </div>
 
   <!-- FORM -->
   <div class="section">
@@ -69,9 +79,22 @@
     </form>
   </div>
 
+  <!-- ACTIONS -->
+  <div class="section d-flex flex-wrap gap-3 justify-content-between">
+    <div class="d-flex flex-column gap-2">
+      <button class="btn btn-orange" id="btnScadenza">In Scadenza (30 giorni)</button>
+      <button class="btn btn-secondary" id="btnMsgs">Messaggi Inviati</button>
+      <input id="search" placeholder="Cerca..." class="form-control">
+    </div>
+    <div class="d-flex flex-column gap-2">
+      <button class="btn btn-outline-primary" id="btnCSV">Esporta CSV</button>
+      <button class="btn btn-outline-secondary" id="btnPDF">Riepilogo PDF</button>
+    </div>
+  </div>
+
   <!-- LISTA -->
   <div class="section p-0">
-    <table class="table table-striped mb-0">
+    <table class="table table-striped mb-0" id="tbl">
       <thead class="table-light"><tr>
         <th>Nome</th><th>Cognome</th><th>Tipologia</th><th>Scadenza</th><th>Azioni</th>
       </tr></thead>
@@ -82,11 +105,10 @@
 
 <script>
 const API='https://gestionale-clienti-assicurati.onrender.com/api';
-let clienti=[];
+let clienti=[];let logMsg=[];
 const $=s=>document.querySelector(s);
-function fmt(t){return new Date(t).toLocaleDateString();}
+const fmt=t=>new Date(t).toLocaleDateString();
 
-// Mostra campi dinamici
 $('#tipologia').addEventListener('change',e=>{
   $('#rcFields').classList.add('hidden');
   $('#ramiFields').classList.add('hidden');
@@ -94,58 +116,13 @@ $('#tipologia').addEventListener('change',e=>{
   if(e.target.value==='ALTRI RAMI') $('#ramiFields').classList.remove('hidden');
 });
 
-// Carica clienti
-async function load(){
-  try{
-    const r=await fetch(`${API}/clienti`);
-    if(!r.ok) throw new Error('Status '+r.status);
-    clienti=await r.json();
-    render();
-  }catch(err){
-    console.error('load()',err);
-    alert('Errore nel caricamento: '+err.message);
-  }
-}
+// Load
+(async function load(){try{const r=await fetch(`${API}/clienti`);if(!r.ok)throw new Error(r.status);clienti=await r.json();render();}catch(er){alert('Errore caricamento '+er.message);}})();
 
-// Renderizza tabella
-function render(){
-  const tbody=$('#listaClienti');
-  tbody.innerHTML='';
-  clienti.forEach((c,i)=>{
-    const tr=document.createElement('tr');
-    tr.innerHTML=`<td>${c.nome}</td><td>${c.cognome}</td><td>${c.tipologia}</td><td>${fmt(c.scadenza)}</td>
-      <td><button class='btn btn-sm btn-danger' onclick='delCliente("${c._id}")'>Elimina</button></td>`;
-    tbody.appendChild(tr);
-  });
-}
+// Render
+function render(list=clienti){const tb=$('#listaClienti');tb.innerHTML='';list.forEach(c=>{const tr=document.createElement('tr');const soon=(c.scadenza-Date.now())/86400000<=30?'table-warning':'';tr.className=soon;tr.innerHTML=`<td>${c.nome}</td><td>${c.cognome}</td><td>${c.tipologia}</td><td>${fmt(c.scadenza)}</td><td class='d-flex gap-2'>
+      <span class='whatsapp-icon' title='Invia WhatsApp' onclick="sendWhats('${c.cellulare}','${encodeURIComponent('La tua polizza è in scadenza, ti invitiamo in ufficio per visionare la nuova proposta!')}')">🟢</span>
+      <button class='btn btn-sm btn-danger' onclick='delCliente("${c._id}")'>Elimina</button></td>`;tb.appendChild(tr);});$('#tot-clienti').textContent=clienti.length;$('#tot-premio').textContent=clienti.reduce((s,c)=>s+Number(c.premio||0),0).toFixed(2);$('#tot-scadenza').textContent=clienti.filter(c=>(c.scadenza-Date.now())/86400000<=30).length;}
 
-// Salva cliente
-$('#formCliente').addEventListener('submit',async e=>{
-  e.preventDefault();
-  const f=e.target;const obj={nome:f.nome.value,cognome:f.cognome.value,cellulare:f.cellulare.value,tipologia:f.tipologia.value,inizio:new Date(f.inizio.value).getTime(),assicurazione:f.assicurazione.value,azienda:f.azienda.value,premio:f.premio.value};
-  if(obj.tipologia==='RC AUTO'){
-    obj.targa=f.targa.value;obj.frazionamento=f.frazionamento.value;const m=parseInt(obj.frazionamento)||12;obj.scadenza=obj.inizio+m*30*86400000;
-  }else{
-    obj.dettaglio=f.dettaglio.value;obj.polizza=f.tipoPolizza.value;obj.scadenza=obj.inizio+(parseInt(f.scadenzaMesi.value)||12)*30*86400000;obj.note=f.note.value;obj.massimale=f.massimale.value;obj.attivita=f.tipoAttivita.value;
-  }
-  try{
-    const res=await fetch(`${API}/clienti`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(obj)});
-    if(!res.ok) throw new Error('Status '+res.status);
-    const nuovo=await res.json();clienti.push(nuovo);render();f.reset();$('#rcFields').classList.add('hidden');$('#ramiFields').classList.add('hidden');
-  }catch(err){console.error('POST',err);alert('Errore salvataggio: '+err.message);} 
-});
-
-// Elimina cliente
-async function delCliente(id){
-  if(!confirm('Eliminare cliente?'))return;
-  try{
-    const r=await fetch(`${API}/clienti/`+id,{method:'DELETE'});
-    if(!r.ok) throw new Error('Status '+r.status);
-    clienti=clienti.filter(c=>c._id!==id);render();
-  }catch(err){alert('Errore eliminazione: '+err.message);}
-}
-
-load();
-</script>
-</body>
-</html>
+// WhatsApp
+function sendWhats(num,msg){window.open(`https://wa.me/39${num}?text=${msg}`,'_blank');log
