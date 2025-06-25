@@ -6,8 +6,6 @@
   <title>Gestionale Clienti Assicurati</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <style>
     body{background:#f5f9ff;color:#003366;padding:2rem;font-family:'Segoe UI',sans-serif}
     h1{color:#ff6600}
@@ -16,7 +14,9 @@
     .hidden{display:none}
     .whatsapp-icon{color:#25D366;cursor:pointer;font-size:1.3rem}
     .sortable{cursor:pointer}
-    .dashboard .card{background:#f0f6ff;border:none;border-left:5px solid #ff6600}
+    .sortable.asc::after{content:' \25B2';font-size:0.8rem}
+    .sortable.desc::after{content:' \25BC';font-size:0.8rem}
+    .table-warning{background:#fff8e1 !important}
   </style>
 </head>
 <body>
@@ -87,8 +87,8 @@
       <input id="search" placeholder="Cerca..." class="form-control">
     </div>
     <div class="d-flex flex-column gap-2">
-      <button class="btn btn-outline-primary" id="btnCSV">Esporta CSV</button>
-      <button class="btn btn-outline-secondary" id="btnPDF">Riepilogo PDF</button>
+      <button class="btn btn-outline-primary" id="btnCSV">CSV</button>
+      <button class="btn btn-outline-secondary" id="btnPDF">PDF</button>
     </div>
   </div>
 
@@ -96,7 +96,11 @@
   <div class="section p-0">
     <table class="table table-striped mb-0" id="tbl">
       <thead class="table-light"><tr>
-        <th>Nome</th><th>Cognome</th><th>Tipologia</th><th>Scadenza</th><th>Azioni</th>
+        <th class="sortable" data-k="nome">Nome</th>
+        <th class="sortable" data-k="cognome">Cognome</th>
+        <th class="sortable" data-k="tipologia">Tipologia</th>
+        <th class="sortable" data-k="scadenza">Scadenza</th>
+        <th>Azioni</th>
       </tr></thead>
       <tbody id="listaClienti"></tbody>
     </table>
@@ -105,10 +109,11 @@
 
 <script>
 const API='https://gestionale-clienti-assicurati.onrender.com/api';
-let clienti=[];let logMsg=[];
-const $=s=>document.querySelector(s);
-const fmt=t=>new Date(t).toLocaleDateString();
+let clienti=[];let sortKey='nome',sortAsc=true,logMsgs=[];
+const $=qs=>document.querySelector(qs);
+const fmt=d=>new Date(d).toLocaleDateString();
 
+// campi dinamici
 $('#tipologia').addEventListener('change',e=>{
   $('#rcFields').classList.add('hidden');
   $('#ramiFields').classList.add('hidden');
@@ -116,13 +121,18 @@ $('#tipologia').addEventListener('change',e=>{
   if(e.target.value==='ALTRI RAMI') $('#ramiFields').classList.remove('hidden');
 });
 
-// Load
-(async function load(){try{const r=await fetch(`${API}/clienti`);if(!r.ok)throw new Error(r.status);clienti=await r.json();render();}catch(er){alert('Errore caricamento '+er.message);}})();
+// load iniziale
+(async()=>{try{const r=await fetch(`${API}/clienti`);if(!r.ok)throw new Error(r.status);clienti=await r.json();render();}catch(err){console.error(err);alert('Errore load '+err.message);}})();
 
-// Render
-function render(list=clienti){const tb=$('#listaClienti');tb.innerHTML='';list.forEach(c=>{const tr=document.createElement('tr');const soon=(c.scadenza-Date.now())/86400000<=30?'table-warning':'';tr.className=soon;tr.innerHTML=`<td>${c.nome}</td><td>${c.cognome}</td><td>${c.tipologia}</td><td>${fmt(c.scadenza)}</td><td class='d-flex gap-2'>
-      <span class='whatsapp-icon' title='Invia WhatsApp' onclick="sendWhats('${c.cellulare}','${encodeURIComponent('La tua polizza è in scadenza, ti invitiamo in ufficio per visionare la nuova proposta!')}')">🟢</span>
-      <button class='btn btn-sm btn-danger' onclick='delCliente("${c._id}")'>Elimina</button></td>`;tb.appendChild(tr);});$('#tot-clienti').textContent=clienti.length;$('#tot-premio').textContent=clienti.reduce((s,c)=>s+Number(c.premio||0),0).toFixed(2);$('#tot-scadenza').textContent=clienti.filter(c=>(c.scadenza-Date.now())/86400000<=30).length;}
+// render table + dash
+function render(list=clienti){const tbody=$('#listaClienti');tbody.innerHTML='';list=[...list].sort((a,b)=>{if(a[sortKey]>b[sortKey])return sortAsc?1:-1;if(a[sortKey]<b[sortKey])return sortAsc?-1:1;return 0;});list.forEach(c=>{const tr=document.createElement('tr');if((c.scadenza-Date.now())/86400000<=30)tr.classList.add('table-warning');tr.innerHTML=`<td>${c.nome}</td><td>${c.cognome}</td><td>${c.tipologia}</td><td>${fmt(c.scadenza)}</td><td class='d-flex gap-2'>
+      <span class='whatsapp-icon' title='Invia WhatsApp' onclick="sendWhats('${c.cellulare}','${encodeURIComponent('La tua polizza è in scadenza, ti invitiamo in ufficio per visionare la nuova proposta!')}','${c.nome} ${c.cognome}')">🟢</span>
+      <button class='btn btn-sm btn-danger' onclick='delCliente("${c._id}")'>🗑️</button></td>`;tbody.appendChild(tr);});
+  $('#tot-clienti').textContent=clienti.length;
+  $('#tot-premio').textContent=clienti.reduce((s,c)=>s+Number(c.premio||0),0).toFixed(2);
+  $('#tot-scadenza').textContent=clienti.filter(c=>(c.scadenza-Date.now())/86400000<=30).length;
+}
 
-// WhatsApp
-function sendWhats(num,msg){window.open(`https://wa.me/39${num}?text=${msg}`,'_blank');log
+// sortable headers
+$$=sel=>document.querySelectorAll(sel);
+$$('
