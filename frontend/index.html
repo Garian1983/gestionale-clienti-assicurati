@@ -1,138 +1,303 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Gestionale Clienti Assicurati</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <style>
-    body{background:#f5f9ff;color:#003366;padding:2rem;font-family:'Segoe UI',sans-serif}
-    h1{color:#ff6600}
-    .section{background:#fff;border-radius:1rem;padding:2rem;margin-bottom:2rem;box-shadow:0 0 10px rgba(0,0,0,.1)}
-    .btn-orange{background:#ff6600;color:#fff}.btn-orange:hover{background:#e65c00}
-    .hidden{display:none}
-    .whatsapp-icon{color:#25D366;cursor:pointer;font-size:1.3rem}
-    .sortable{cursor:pointer}
-    .sortable.asc::after{content:' \25B2';font-size:0.8rem}
-    .sortable.desc::after{content:' \25BC';font-size:0.8rem}
-    .table-warning{background:#fff8e1 !important}
+    body { background: #f5f9ff; color: #003366; padding: 2rem; font-family: "Segoe UI", sans-serif; }
+    h1 { color: #ff6600; }
+    .section { background: #fff; border-radius: 1rem; padding: 2rem; margin-bottom: 2rem; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); }
+    .btn-orange { background: #ff6600; color: #fff; }
+    .btn-orange:hover { background: #e65c00; }
+    .hidden { display: none; }
+    .whatsapp-icon { color: #25d366; font-size: 1.35rem; cursor: pointer; }
+    .sortable { cursor: pointer; }
+    .sortable.asc::after { content: " \25B2"; }
+    .sortable.desc::after { content: " \25BC"; }
+    .table-warning { background: #fff8e1 !important; }
   </style>
 </head>
 <body>
-<div class="container">
-  <h1 class="mb-4">Gestionale Clienti Assicurati</h1>
+  <div class="container">
+    <h1 class="mb-4">Gestionale Clienti Assicurati</h1>
 
-  <!-- DASHBOARD -->
-  <div class="dashboard row text-center section">
-    <div class="col-md-4"><div class="card p-3"><h6>Totale Clienti</h6><h2 id="tot-clienti">0</h2></div></div>
-    <div class="col-md-4"><div class="card p-3"><h6>In Scadenza 30 gg</h6><h2 id="tot-scadenza">0</h2></div></div>
-    <div class="col-md-4"><div class="card p-3"><h6>Premi Lordi (€)</h6><h2 id="tot-premio">0</h2></div></div>
-  </div>
+    <!-- DASHBOARD -->
+    <div class="row text-center section" id="dash">
+      <div class="col-md-4"><div class="card p-3"><h6>Totale</h6><h2 id="d-tot">0</h2></div></div>
+      <div class="col-md-4"><div class="card p-3"><h6>Scadenza ≤30gg</h6><h2 id="d-soon">0</h2></div></div>
+      <div class="col-md-4"><div class="card p-3"><h6>Premi Lordi €</h6><h2 id="d-premi">0</h2></div></div>
+    </div>
 
-  <!-- FORM -->
-  <div class="section">
-    <form id="formCliente" class="row g-3">
-      <div class="col-md-6"><input id="nome" class="form-control" placeholder="Nome" required></div>
-      <div class="col-md-6"><input id="cognome" class="form-control" placeholder="Cognome" required></div>
-      <div class="col-md-6"><input id="cellulare" class="form-control" placeholder="Cellulare (senza +)" required></div>
-      <div class="col-md-6">
-        <select id="tipologia" class="form-select" required>
-          <option value="">Tipologia...</option>
-          <option value="RC AUTO">RC AUTO</option>
-          <option value="ALTRI RAMI">ALTRI RAMI</option>
-        </select>
-      </div>
-
-      <!-- RC AUTO -->
-      <div id="rcFields" class="hidden row g-3">
-        <div class="col-md-6"><input id="targa" class="form-control" placeholder="Targa"></div>
+    <!-- FORM -->
+    <div class="section">
+      <form id="form" class="row g-3">
+        <input type="hidden" id="_id" />
+        <div class="col-md-6"><input id="nome" class="form-control" placeholder="Nome" required /></div>
+        <div class="col-md-6"><input id="cognome" class="form-control" placeholder="Cognome" required /></div>
+        <div class="col-md-6"><input id="cellulare" class="form-control" placeholder="Cellulare (senza +)" required /></div>
         <div class="col-md-6">
-          <select id="frazionamento" class="form-select">
-            <option value="">Frazionamento...</option>
-            <option value="6">6 mesi</option>
-            <option value="12">12 mesi</option>
+          <select id="tipologia" class="form-select" required>
+            <option value="">Tipologia...</option>
+            <option value="RC AUTO">RC AUTO</option>
+            <option value="ALTRI RAMI">ALTRI RAMI</option>
           </select>
         </div>
-      </div>
 
-      <!-- ALTRI RAMI -->
-      <div id="ramiFields" class="hidden row g-3">
-        <div class="col-md-6"><input id="dettaglio" class="form-control" placeholder="Dettaglio"></div>
-        <div class="col-md-6"><input id="tipoPolizza" class="form-control" placeholder="Tipologia Polizza"></div>
-        <div class="col-md-6">
-          <select id="scadenzaMesi" class="form-select">
-            <option value="">Scadenza (mesi)</option>
-            <option>1</option><option>3</option><option>6</option><option>9</option><option>12</option>
-          </select>
+        <!-- RC AUTO -->
+        <div id="rcFields" class="hidden row g-3">
+          <div class="col-md-6"><input id="targa" class="form-control" placeholder="Targa" /></div>
+          <div class="col-md-6">
+            <select id="frazionamento" class="form-select">
+              <option value="">Frazionamento...</option>
+              <option value="6">6 mesi</option>
+              <option value="12">12 mesi</option>
+            </select>
+          </div>
         </div>
-        <div class="col-md-6"><input id="note" class="form-control" placeholder="Note"></div>
-        <div class="col-md-6"><input id="massimale" class="form-control" placeholder="Massimale"></div>
-        <div class="col-md-6"><input id="tipoAttivita" class="form-control" placeholder="Tipologia Attività"></div>
+
+        <!-- ALTRI RAMI -->
+        <div id="ramiFields" class="hidden row g-3">
+          <div class="col-md-6"><input id="dettaglio" class="form-control" placeholder="Dettaglio" /></div>
+          <div class="col-md-6"><input id="tipoPolizza" class="form-control" placeholder="Tipologia Polizza" /></div>
+          <div class="col-md-6">
+            <select id="scadenzaMesi" class="form-select">
+              <option value="">Scadenza (mesi)</option>
+              <option>1</option><option>3</option><option>6</option><option>9</option><option>12</option>
+            </select>
+          </div>
+          <div class="col-md-6"><input id="note" class="form-control" placeholder="Note" /></div>
+          <div class="col-md-6"><input id="massimale" class="form-control" placeholder="Massimale" /></div>
+          <div class="col-md-6"><input id="tipoAttivita" class="form-control" placeholder="Tipologia Attività" /></div>
+        </div>
+
+        <div class="col-md-6"><input id="inizio" type="date" class="form-control" required /></div>
+        <div class="col-md-6"><input id="assicurazione" class="form-control" placeholder="Assicurazione" /></div>
+        <div class="col-md-6"><input id="azienda" class="form-control" placeholder="Azienda" /></div>
+        <div class="col-md-6"><input id="premio" type="number" step="0.01" class="form-control" placeholder="Premio Lordo" /></div>
+        <div class="col-12"><button class="btn btn-orange" type="submit">Salva</button></div>
+      </form>
+    </div>
+
+    <!-- ACTIONS -->
+    <div class="section d-flex flex-wrap gap-3 justify-content-between">
+      <div class="d-flex flex-column gap-2">
+        <button class="btn btn-orange" id="btnScadenza">In Scadenza (30 giorni)</button>
+        <button class="btn btn-secondary" id="btnMsgs">Messaggi Inviati</button>
+        <input id="search" placeholder="Cerca..." class="form-control" />
       </div>
-
-      <div class="col-md-6"><input id="inizio" type="date" class="form-control" placeholder="Inizio copertura" required></div>
-      <div class="col-md-6"><input id="assicurazione" class="form-control" placeholder="Assicurazione"></div>
-      <div class="col-md-6"><input id="azienda" class="form-control" placeholder="Azienda"></div>
-      <div class="col-md-6"><input id="premio" type="number" step="0.01" class="form-control" placeholder="Premio Lordo"></div>
-      <div class="col-12"><button class="btn btn-orange" type="submit">Salva Cliente</button></div>
-    </form>
-  </div>
-
-  <!-- ACTIONS -->
-  <div class="section d-flex flex-wrap gap-3 justify-content-between">
-    <div class="d-flex flex-column gap-2">
-      <button class="btn btn-orange" id="btnScadenza">In Scadenza (30 giorni)</button>
-      <button class="btn btn-secondary" id="btnMsgs">Messaggi Inviati</button>
-      <input id="search" placeholder="Cerca..." class="form-control">
+      <div class="d-flex flex-column gap-2">
+        <button class="btn btn-outline-primary" id="btnCSV">CSV</button>
+        <button class="btn btn-outline-secondary" id="btnPDF">PDF</button>
+      </div>
     </div>
-    <div class="d-flex flex-column gap-2">
-      <button class="btn btn-outline-primary" id="btnCSV">CSV</button>
-      <button class="btn btn-outline-secondary" id="btnPDF">PDF</button>
+
+    <!-- LISTA -->
+    <div class="section p-0">
+      <table class="table table-striped mb-0" id="tbl">
+        <thead class="table-light">
+          <tr>
+            <th class="sortable" data-k="nome">Nome</th>
+            <th class="sortable" data-k="cognome">Cognome</th>
+            <th class="sortable" data-k="tipologia">Tipologia</th>
+            <th class="sortable" data-k="scadenza">Scadenza</th>
+            <th>Azioni</th>
+          </tr>
+        </thead>
+        <tbody id="lista"></tbody>
+      </table>
     </div>
   </div>
 
-  <!-- LISTA -->
-  <div class="section p-0">
-    <table class="table table-striped mb-0" id="tbl">
-      <thead class="table-light"><tr>
-        <th class="sortable" data-k="nome">Nome</th>
-        <th class="sortable" data-k="cognome">Cognome</th>
-        <th class="sortable" data-k="tipologia">Tipologia</th>
-        <th class="sortable" data-k="scadenza">Scadenza</th>
-        <th>Azioni</th>
-      </tr></thead>
-      <tbody id="listaClienti"></tbody>
-    </table>
-  </div>
-</div>
+  <script>
+    const API = "https://gestionale-clienti-assicurati.onrender.com/api";
+    let clienti = [];
+    let sortKey = "nome";
+    let sortAsc = true;
+    let logMsgs = [];
+    const $ = (q) => document.querySelector(q);
+    const $$ = (q) => document.querySelectorAll(q);
+    const fmt = (d) => new Date(d).toLocaleDateString();
 
-<script>
-const API='https://gestionale-clienti-assicurati.onrender.com/api';
-let clienti=[];let sortKey='nome',sortAsc=true,logMsgs=[];
-const $=qs=>document.querySelector(qs);
-const fmt=d=>new Date(d).toLocaleDateString();
+    // ✨ campi dinamici
+    $("#tipologia").addEventListener("change", (e) => {
+      $("#rcFields").classList.toggle("hidden", e.target.value !== "RC AUTO");
+      $("#ramiFields").classList.toggle("hidden", e.target.value !== "ALTRI RAMI");
+    });
 
-// campi dinamici
-$('#tipologia').addEventListener('change',e=>{
-  $('#rcFields').classList.add('hidden');
-  $('#ramiFields').classList.add('hidden');
-  if(e.target.value==='RC AUTO') $('#rcFields').classList.remove('hidden');
-  if(e.target.value==='ALTRI RAMI') $('#ramiFields').classList.remove('hidden');
-});
+    // 🔄 load iniziale
+    (async () => {
+      try {
+        const r = await fetch(`${API}/clienti`);
+        if (!r.ok) throw new Error(r.status);
+        clienti = await r.json();
+        render();
+      } catch (err) {
+        alert("Errore load " + err.message);
+      }
+    })();
 
-// load iniziale
-(async()=>{try{const r=await fetch(`${API}/clienti`);if(!r.ok)throw new Error(r.status);clienti=await r.json();render();}catch(err){console.error(err);alert('Errore load '+err.message);}})();
+    // 📋 render tabella + dashboard
+    function render(list = clienti) {
+      const tb = $("#lista");
+      tb.innerHTML = "";
+      // sort
+      list = [...list].sort((a, b) => {
+        if (a[sortKey] > b[sortKey]) return sortAsc ? 1 : -1;
+        if (a[sortKey] < b[sortKey]) return sortAsc ? -1 : 1;
+        return 0;
+      });
 
-// render table + dash
-function render(list=clienti){const tbody=$('#listaClienti');tbody.innerHTML='';list=[...list].sort((a,b)=>{if(a[sortKey]>b[sortKey])return sortAsc?1:-1;if(a[sortKey]<b[sortKey])return sortAsc?-1:1;return 0;});list.forEach(c=>{const tr=document.createElement('tr');if((c.scadenza-Date.now())/86400000<=30)tr.classList.add('table-warning');tr.innerHTML=`<td>${c.nome}</td><td>${c.cognome}</td><td>${c.tipologia}</td><td>${fmt(c.scadenza)}</td><td class='d-flex gap-2'>
-      <span class='whatsapp-icon' title='Invia WhatsApp' onclick="sendWhats('${c.cellulare}','${encodeURIComponent('La tua polizza è in scadenza, ti invitiamo in ufficio per visionare la nuova proposta!')}','${c.nome} ${c.cognome}')">🟢</span>
-      <button class='btn btn-sm btn-danger' onclick='delCliente("${c._id}")'>🗑️</button></td>`;tbody.appendChild(tr);});
-  $('#tot-clienti').textContent=clienti.length;
-  $('#tot-premio').textContent=clienti.reduce((s,c)=>s+Number(c.premio||0),0).toFixed(2);
-  $('#tot-scadenza').textContent=clienti.filter(c=>(c.scadenza-Date.now())/86400000<=30).length;
-}
+      list.forEach((c) => {
+        const tr = document.createElement("tr");
+        if ((c.scadenza - Date.now()) / 86400000 <= 30) tr.classList.add("table-warning");
+        tr.innerHTML = `
+          <td>${c.nome}</td>
+          <td>${c.cognome}</td>
+          <td>${c.tipologia}</td>
+          <td>${fmt(c.scadenza)}</td>
+          <td class="d-flex gap-2">
+            <span class="whatsapp-icon" title="Invia WhatsApp" onclick="sendWhats('${c.cellulare}','${encodeURIComponent("La tua polizza è in scadenza, ti invitiamo in ufficio per visionare la nuova proposta!")}','${c.nome} ${c.cognome}')">🟢</span>
+            <button class="btn btn-sm btn-danger" onclick="delCliente('${c._id}')">🗑️</button>
+          </td>`;
+        tb.appendChild(tr);
+      });
 
-// sortable headers
-$$=sel=>document.querySelectorAll(sel);
-$$('
+      // dashboard
+      $("#d-tot").textContent = clienti.length;
+      $("#d-premi").textContent = clienti.reduce((s, c) => s + Number(c.premio || 0), 0).toFixed(2);
+      $("#d-soon").textContent = clienti.filter((c) => (c.scadenza - Date.now()) / 86400000 <= 30).length;
+    }
+
+    // ↕️ ordinamento colonne
+    $$(".sortable").forEach((th) => {
+      th.addEventListener("click", () => {
+        const k = th.getAttribute("data-k");
+        sortAsc = sortKey === k ? !sortAsc : true;
+        sortKey = k;
+        $$(".sortable").forEach((h) => h.classList.remove("asc", "desc"));
+        th.classList.add(sortAsc ? "asc" : "desc");
+        render();
+      });
+    });
+
+    // 💬 WhatsApp
+    function sendWhats(num, msg, nome) {
+      const testo = prompt("Modifica il messaggio prima dell'invio", decodeURIComponent(msg));
+      if (testo === null) return;
+      window.open(`https://wa.me/39${num}?text=${encodeURIComponent(testo)}`, "_blank");
+      logMsgs.push(nome);
+    }
+
+    // ➕ salva/aggiorna cliente
+    $("#form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const f = e.target;
+      const obj = {
+        nome: f.nome.value,
+        cognome: f.cognome.value,
+        cellulare: f.cellulare.value,
+        tipologia: f.tipologia.value,
+        inizio: new Date(f.inizio.value).getTime(),
+        assicurazione: f.assicurazione.value,
+        azienda: f.azienda.value,
+        premio: f.premio.value,
+      };
+      if (obj.tipologia === "RC AUTO") {
+        obj.targa = f.targa.value;
+        obj.frazionamento = f.frazionamento.value;
+        obj.scadenza = obj.inizio + (parseInt(obj.frazionamento) || 12) * 30 * 86400000;
+      } else {
+        obj.dettaglio = f.dettaglio.value;
+        obj.polizza = f.tipoPolizza.value;
+        obj.scadenza = obj.inizio + (parseInt(f.scadenzaMesi.value) || 12) * 30 * 86400000;
+        obj.note = f.note.value;
+        obj.massimale = f.massimale.value;
+        obj.attivita = f.tipoAttivita.value;
+      }
+
+      const method = f._id.value ? "PUT" : "POST";
+      const url = method === "PUT" ? `${API}/clienti/${f._id.value}` : `${API}/clienti`;
+      try {
+        const res = await fetch(url, {
+          method,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(obj),
+        });
+        if (!res.ok) throw new Error(res.status);
+        const cli = await res.json();
+        if (method === "POST") clienti.push(cli);
+        else clienti = clienti.map((c) => (c._id === cli._id ? cli : c));
+        f.reset();
+        $("#rcFields").classList.add("hidden");
+        $("#ramiFields").classList.add("hidden");
+        render();
+      } catch (err) {
+        alert("Errore salvataggio " + err.message);
+      }
+    });
+
+    // 🗑️ elimina
+    async function delCliente(id) {
+      if (!confirm("Eliminare definitivamente?")) return;
+      try {
+        const r = await fetch(`${API}/clienti/${id}`, { method: "DELETE" });
+        if (!r.ok) throw new Error(r.status);
+        clienti = clienti.filter((c) => c._id !== id);
+        render();
+      } catch (err) {
+        alert("Errore eliminazione " + err.message);
+      }
+    }
+
+    // 🔍 search
+    $("#search").addEventListener("input", (e) => {
+      const q = e.target.value.toLowerCase();
+      const filtrati = clienti.filter((c) => JSON.stringify(c).toLowerCase().includes(q));
+      render(filtrati);
+    });
+
+    // ⏳ filtro scadenze
+    $("#btnScadenza").addEventListener("click", () => {
+      render(clienti.filter((c) => (c.scadenza - Date.now()) / 86400000 <= 30));
+    });
+
+    // 📨 messaggi inviati
+    $("#btnMsgs").addEventListener("click", () => {
+      alert("Messaggi inviati a:\n" + (logMsgs.join(", ") || "Nessuno"));
+    });
+
+    // 📤 CSV
+    $("#btnCSV").addEventListener("click", () => {
+      let csv = "Nome,Cognome,Tipologia,Scadenza\n";
+      clienti.forEach((c) => {
+        csv += `${c.nome},${c.cognome},${c.tipologia},${fmt(c.scadenza)}\n`;
+      });
+      const blob = new Blob([csv], { type: "text/csv" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "clienti.csv";
+      a.click();
+    });
+
+    // 📄 PDF
+    $("#btnPDF").addEventListener("click", async () => {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      doc.text("Riepilogo Clienti", 14, 20);
+      let y = 30;
+      clienti.forEach((c) => {
+        doc.text(`${c.nome} ${c.cognome} | ${c.tipologia} | ${fmt(c.scadenza)}`, 14, y);
+        y += 8;
+        if (y > 280) {
+          doc.addPage();
+          y = 20;
+        }
+      });
+      doc.save("clienti.pdf");
+    });
+  </script>
+</body>
+</html>
