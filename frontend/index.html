@@ -2,84 +2,144 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gestionale Clienti Assicurati</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-  <style>body { padding: 2rem; }</style>
+  <style>
+    body{background:#f5f9ff;color:#003366;padding:2rem;font-family:'Segoe UI',sans-serif}
+    h1{color:#ff6600}
+    .section{background:#fff;border-radius:1rem;padding:2rem;margin-bottom:2rem;box-shadow:0 0 10px rgba(0,0,0,.1)}
+    .btn-orange{background:#ff6600;color:#fff}.btn-orange:hover{background:#e65c00}
+    .hidden{display:none}
+    .whatsapp-icon{color:#25D366;cursor:pointer;font-size:1.3rem}
+    .sortable{cursor:pointer}
+    .dashboard .card{background:#f0f6ff;border:none;border-left:5px solid #ff6600}
+  </style>
 </head>
 <body>
 <div class="container">
-  <h1>Gestionale Clienti</h1>
-  <form id="formCliente" class="mb-3">
-    <input id="nome" placeholder="Nome" class="form-control mb-1" required>
-    <input id="cognome" placeholder="Cognome" class="form-control mb-1" required>
-    <input id="tipologia" placeholder="Tipologia" class="form-control mb-1">
-    <input id="scadenza" placeholder="Scadenza (YYYY-MM-DD)" class="form-control mb-1">
-    <button class="btn btn-success">Aggiungi Cliente</button>
-  </form>
-  <button onclick="exportCSV()" class="btn btn-outline-primary">Esporta CSV</button>
-  <button onclick="exportPDF()" class="btn btn-outline-secondary">Esporta PDF</button>
-  <ul id="listaClienti" class="list-group mt-3"></ul>
-</div>
-<script>
-const api = 'https://gestionale-clienti-assicurati.onrender.com/api';
+  <h1 class="mb-4">Gestionale Clienti Assicurati</h1>
 
-document.getElementById('formCliente').addEventListener('submit', async (e) => {
+  <!-- DASHBOARD -->
+  <div class="dashboard row text-center section">
+    <div class="col-md-4"><div class="card p-3"><h6>Totale Clienti</h6><h2 id="tot-clienti">0</h2></div></div>
+    <div class="col-md-4"><div class="card p-3"><h6>In Scadenza 30 gg</h6><h2 id="tot-scadenza">0</h2></div></div>
+    <div class="col-md-4"><div class="card p-3"><h6>Premi Lordi (€)</h6><h2 id="tot-premio">0</h2></div></div>
+  </div>
+
+  <!-- FORM -->
+  <div class="section">
+    <form id="formCliente" class="row g-3">
+      <div class="col-md-6"><input id="nome" class="form-control" placeholder="Nome" required></div>
+      <div class="col-md-6"><input id="cognome" class="form-control" placeholder="Cognome" required></div>
+      <div class="col-md-6"><input id="cellulare" class="form-control" placeholder="Cellulare (senza +)" required></div>
+      <div class="col-md-6">
+        <select id="tipologia" class="form-select" required>
+          <option value="">Tipologia...</option>
+          <option value="RC AUTO">RC AUTO</option>
+          <option value="ALTRI RAMI">ALTRI RAMI</option>
+        </select>
+      </div>
+
+      <!-- Campi RC AUTO -->
+      <div id="rcFields" class="hidden row g-3">
+        <div class="col-md-6"><input id="targa" class="form-control" placeholder="Targa"></div>
+        <div class="col-md-6">
+          <select id="frazionamento" class="form-select">
+            <option value="">Frazionamento...</option>
+            <option value="6">6 mesi</option>
+            <option value="12">12 mesi</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Campi ALTRI RAMI -->
+      <div id="ramiFields" class="hidden row g-3">
+        <div class="col-md-6"><input id="dettaglio" class="form-control" placeholder="Dettaglio"></div>
+        <div class="col-md-6"><input id="scadenzaMesi" type="number" class="form-control" placeholder="Scadenza (mesi)"></div>
+        <div class="col-md-6"><input id="note" class="form-control" placeholder="Note"></div>
+        <div class="col-md-6"><input id="massimale" class="form-control" placeholder="Massimale"></div>
+        <div class="col-md-6"><input id="tipoAttivita" class="form-control" placeholder="Tipologia Attività"></div>
+      </div>
+
+      <div class="col-md-6"><input id="inizio" type="date" class="form-control" placeholder="Inizio copertura" required></div>
+      <div class="col-md-6"><input id="assicurazione" class="form-control" placeholder="Assicurazione"></div>
+      <div class="col-md-6"><input id="azienda" class="form-control" placeholder="Azienda"></div>
+      <div class="col-md-6"><input id="premio" type="number" step="0.01" class="form-control" placeholder="Premio Lordo"></div>
+      <div class="col-12"><button class="btn btn-orange" type="submit">Salva Cliente</button></div>
+    </form>
+  </div>
+
+  <!-- ACTIONS -->
+  <div class="section d-flex flex-wrap gap-3 justify-content-between">
+    <div class="d-flex flex-column gap-2">
+      <button class="btn btn-orange" id="btnScadenza">In Scadenza (30 giorni)</button>
+      <button class="btn btn-secondary" id="btnMsgs">Messaggi Inviati</button>
+      <input id="search" placeholder="Cerca..." class="form-control">
+    </div>
+    <div class="d-flex flex-column gap-2">
+      <button class="btn btn-outline-primary" id="btnCSV">Esporta CSV</button>
+      <button class="btn btn-outline-secondary" id="btnPDF">Riepilogo PDF</button>
+    </div>
+  </div>
+
+  <!-- TABLE -->
+  <div class="section p-0">
+    <table class="table table-striped mb-0" id="tbl">
+      <thead class="table-light"><tr>
+        <th class="sortable" data-k="nome">Nome ▲▼</th>
+        <th class="sortable" data-k="cognome">Cognome ▲▼</th>
+        <th class="sortable" data-k="tipologia">Tipologia ▲▼</th>
+        <th class="sortable" data-k="scadenza">Scadenza ▲▼</th>
+        <th>Azioni</th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const API = 'https://gestionale-clienti-assicurati.onrender.com/api';
+const WHATSAPP_FROM = '393209717165';
+const MSG_BASE = 'La tua polizza è in scadenza, ti invitiamo in ufficio per visionare la nuova proposta!';
+let clienti = [], sendingLog=[]; let sortKey='nome', sortAsc=true;
+const $ = s=>document.querySelector(s);
+function fmt(d){return new Date(d).toLocaleDateString();}
+function days(d){return Math.ceil((d-Date.now())/86400000);}  
+
+// INIT
+window.addEventListener('DOMContentLoaded', load);
+async function load(){
+  const res = await fetch(`${API}/clienti`); clienti = await res.json(); render();}
+
+// FORM HANDLER
+$('#tipologia').addEventListener('change',e=>{
+  $('#rcFields').classList.add('hidden'); $('#ramiFields').classList.add('hidden');
+  if(e.target.value==='RC AUTO') $('#rcFields').classList.remove('hidden');
+  if(e.target.value==='ALTRI RAMI') $('#ramiFields').classList.remove('hidden');
+});
+$('#formCliente').addEventListener('submit',async e=>{
   e.preventDefault();
-  const cliente = {
-    nome: nome.value, cognome: cognome.value,
-    tipologia: tipologia.value, scadenza: new Date(scadenza.value)
+  const f=e.target; const obj={
+    nome:f.nome.value,cognome:f.cognome.value,cellulare:f.cellulare.value,
+    tipologia:f.tipologia.value,inizio:new Date(f.inizio.value).getTime(),
+    assicurazione:f.assicurazione.value,azienda:f.azienda.value,premio:f.premio.value
   };
-  await fetch(`${api}/clienti`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(cliente)
-  });
-  e.target.reset(); fetchClienti();
+  if(obj.tipologia==='RC AUTO'){
+    obj.targa=f.targa.value; obj.frazionamento=f.frazionamento.value;
+    const mesi=parseInt(obj.frazionamento)||12; obj.scadenza=obj.inizio+mesi*30*86400000;
+  }else{
+    obj.dettaglio=f.dettaglio.value; obj.scadenza=obj.inizio+parseInt(f.scadenzaMesi.value||12)*30*86400000;
+    obj.note=f.note.value; obj.massimale=f.massimale.value; obj.attivita=f.tipoAttivita.value;
+  }
+  const res=await fetch(`${API}/clienti`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(obj)});
+  if(res.ok){clienti.push(await res.json()); render(); f.reset(); $('#rcFields').classList.add('hidden'); $('#ramiFields').classList.add('hidden');}
 });
 
-async function fetchClienti() {
-  const res = await fetch(`${api}/clienti`);
-  const clienti = await res.json();
-  const lista = document.getElementById('listaClienti');
-  lista.innerHTML = '';
-  clienti.forEach(c => {
-    const li = document.createElement('li');
-    li.className = 'list-group-item d-flex justify-content-between';
-    li.innerHTML = `${c.nome} ${c.cognome} - ${c.tipologia} - ${new Date(c.scadenza).toLocaleDateString()} <button class='btn btn-sm btn-danger' onclick='deleteCliente("${c._id}")'>X</button>`;
-    lista.appendChild(li);
-  });
-}
-
-async function deleteCliente(id) {
-  await fetch(`${api}/clienti/${id}`, { method: 'DELETE' });
-  fetchClienti();
-}
-
-function exportCSV() {
-  fetch(`${api}/clienti`)
-    .then(res => res.json())
-    .then(clienti => {
-      const csv = 'Nome,Cognome,Tipologia,Scadenza\n' +
-        clienti.map(c => `${c.nome},${c.cognome},${c.tipologia},${new Date(c.scadenza).toLocaleDateString()}`).join('\n');
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'clienti.csv'; a.click();
-    });
-}
-
-async function exportPDF() {
-  const { jsPDF } = window.jspdf; const doc = new jsPDF();
-  const res = await fetch(`${api}/clienti`);
-  const clienti = await res.json();
-  doc.text('Clienti', 10, 10); let y = 20;
-  clienti.forEach(c => {
-    doc.text(`${c.nome} ${c.cognome} - ${c.tipologia} - ${new Date(c.scadenza).toLocaleDateString()}`, 10, y); y += 10;
-  });
-  doc.save('clienti.pdf');
-}
-
-fetchClienti();
-</script>
-</body>
-</html>
+// RENDER TABLE & DASHBOARD
+function render(list=clienti){
+  const tbody=$('#tbl tbody'); tbody.innerHTML='';
+  list=[...list].sort((a,b)=>{if(a[sortKey]>b[sortKey])return sortAsc?1:-1; if(a[sortKey]<b[sortKey])return sortAsc?-1:1; return 0;});
+  list.for
