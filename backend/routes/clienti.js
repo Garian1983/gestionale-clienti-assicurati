@@ -3,7 +3,7 @@ const Cliente = require('../models/Cliente');
 const authMiddleware = require('../middleware/authMiddleware');
 const router = express.Router();
 
-router.use(authMiddleware);
+// router.use(authMiddleware);
 
 router.get('/', async (req, res) => {
   const clienti = await Cliente.find({ owner: req.user._id }).sort({ createdAt: -1 });
