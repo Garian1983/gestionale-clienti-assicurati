@@ -1,77 +1,191 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <title>Gestionale Clienti Assicurati</title>
+
+  <!-- libreria PDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <!-- stile identico al file funzionante -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
   <style>
-    body { font-family: Arial, sans-serif; background: #f5f5f5; margin: 0; padding: 2rem; }
-    .section { background: #fff; padding: 1.5rem; border-radius: 10px; margin-bottom: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
-    th, td { border: 1px solid #ccc; padding: 0.5rem; text-align: left; }
-    th.sortable { cursor: pointer; }
-    th.sortable::after { content: '\25B4\25BE'; font-size: 0.7em; margin-left: 5px; }
-    .table-warning { background-color: #fff8dc; }
-    .btn { padding: 0.5rem 1rem; margin: 0.3rem; cursor: pointer; border: none; border-radius: 5px; }
-    .btn-primary { background-color: #007bff; color: white; }
-    .btn-danger { background-color: #dc3545; color: white; }
-    .btn-orange { background-color: #ff6600; color: white; }
-    .whatsapp-icon { color: #25D366; font-size: 1.3rem; cursor: pointer; margin-left: 8px; text-decoration: none; }
+    body{font-family:Arial,Helvetica,sans-serif;background:#f5f5f5;padding:2rem}
+    h1{color:#ff6600}
+    .section{background:#fff;padding:1.5rem;border-radius:10px;box-shadow:0 2px 8px rgba(0,0,0,.1);margin-bottom:2rem}
+    table{width:100%;margin-top:1rem}
+    th,td{padding:.45rem;border:1px solid #ccc}
+    th.sortable{cursor:pointer}
+    th.sortable.asc::after{content:" \\25B2";font-size:.7em}
+    th.sortable.desc::after{content:" \\25BC";font-size:.7em}
+    .table-warning{background:#fff8dc!important}
+    .btn-orange{background:#ff6600;color:#fff;border:none;padding:.4rem .8rem}
+    .whatsapp-icon{color:#25D366;font-size:1.2rem;margin-left:.3rem;cursor:pointer}
   </style>
 </head>
 <body>
-  <div class="section">
-    <h1>Gestionale Clienti Assicurati</h1>
-    <form id="form">
-      <input type="hidden" id="_id" />
-      <input id="nome" placeholder="Nome" required />
-      <input id="cognome" placeholder="Cognome" required />
-      <input id="cellulare" placeholder="Cellulare (senza +)" required />
-      <select id="tipologia" required>
-        <option value="">Tipologia...</option>
-        <option value="RC AUTO">RC AUTO</option>
-        <option value="ALTRI RAMI">ALTRI RAMI</option>
+
+<div class="section">
+  <h1>Gestionale Clienti Assicurati</h1>
+
+  <!-- === FORM === -->
+  <form id="form" class="row g-3">
+    <input type="hidden" id="_id">
+    <div class="col-md-6"><input id="nome" class="form-control" placeholder="Nome" required></div>
+    <div class="col-md-6"><input id="cognome" class="form-control" placeholder="Cognome" required></div>
+    <div class="col-md-6"><input id="cellulare" class="form-control" placeholder="Cellulare (senza +)" required></div>
+    <div class="col-md-6">
+      <select id="tipologia" class="form-select" required>
+        <option value="">Tipologia…</option>
+        <option>RC AUTO</option>
+        <option>ALTRI RAMI</option>
       </select>
-      <div id="rcFields" style="display:none">
-        <input id="targa" placeholder="Targa" />
-        <select id="frazionamento">
-          <option value="">Frazionamento...</option>
+    </div>
+
+    <!-- RC AUTO -->
+    <div id="rc" class="col-12 row g-3 d-none">
+      <div class="col-md-6"><input id="targa" class="form-control" placeholder="Targa"></div>
+      <div class="col-md-6">
+        <select id="frazionamento" class="form-select">
+          <option value="">Frazionamento…</option>
           <option value="6">6 mesi</option>
           <option value="12">12 mesi</option>
         </select>
       </div>
-      <div id="ramiFields" style="display:none">
-        <input id="dettaglio" placeholder="Dettaglio" />
-        <input id="tipoPolizza" placeholder="Tipologia Polizza" />
-        <select id="scadenzaMesi">
-          <option value="">Scadenza (mesi)...</option>
+    </div>
+
+    <!-- ALTRI RAMI -->
+    <div id="rami" class="col-12 row g-3 d-none">
+      <div class="col-md-6"><input id="dettaglio" class="form-control" placeholder="Dettaglio"></div>
+      <div class="col-md-6"><input id="tipoPolizza" class="form-control" placeholder="Tipologia Polizza"></div>
+      <div class="col-md-6">
+        <select id="scadenzaMesi" class="form-select">
+          <option value="">Scadenza (mesi)…</option>
           <option>1</option><option>3</option><option>6</option><option>9</option><option>12</option>
         </select>
-        <input id="note" placeholder="Note" />
-        <input id="massimale" placeholder="Massimale" />
-        <input id="tipoAttivita" placeholder="Tipologia Attività" />
       </div>
-      <input id="inizio" type="date" required />
-      <input id="assicurazione" placeholder="Assicurazione" />
-      <input id="azienda" placeholder="Azienda" />
-      <input id="premio" type="number" placeholder="Premio Lordo" />
-      <button type="submit" class="btn btn-orange">Salva Cliente</button>
-    </form>
-    <button id="btnPDF" class="btn btn-primary">Esporta PDF</button>
-    <table id="tbl">
-      <thead>
-        <tr>
-          <th class="sortable" data-k="nome">Nome</th>
-          <th class="sortable" data-k="cognome">Cognome</th>
-          <th>Cellulare</th>
-          <th class="sortable" data-k="tipologia">Tipologia</th>
-          <th class="sortable" data-k="scadenza">Scadenza</th>
-          <th>Azioni</th>
-        </tr>
-      </thead>
-      <tbody id="lista"></tbody>
-    </table>
-  </div>
+      <div class="col-md-6"><input id="note" class="form-control" placeholder="Note"></div>
+      <div class="col-md-6"><input id="massimale" class="form-control" placeholder="Massimale"></div>
+      <div class="col-md-6"><input id="tipoAttivita" class="form-control" placeholder="Tipologia Attività"></div>
+    </div>
+
+    <div class="col-md-6"><input id="inizio" type="date" class="form-control" required></div>
+    <div class="col-md-6"><input id="assicurazione" class="form-control" placeholder="Assicurazione"></div>
+    <div class="col-md-6"><input id="azienda" class="form-control" placeholder="Azienda"></div>
+    <div class="col-md-6"><input id="premio" type="number" step=".01" class="form-control" placeholder="Premio Lordo"></div>
+    <div class="col-12"><button class="btn btn-orange" type="submit">Salva</button></div>
+  </form>
+
+  <!-- === TABELLA === -->
+  <button id="btnPDF" class="btn btn-primary btn-sm mt-2">Esporta PDF</button>
+
+  <table id="tbl" class="table table-striped">
+    <thead>
+      <tr>
+        <th class="sortable" data-k="nome">Nome</th>
+        <th class="sortable" data-k="cognome">Cognome</th>
+        <th>Cellulare</th>
+        <th class="sortable" data-k="tipologia">Tipologia</th>
+        <th class="sortable" data-k="scadenza">Scadenza</th>
+        <th>Azioni</th>
+      </tr>
+    </thead>
+    <tbody id="lista"></tbody>
+  </table>
+</div>
+
+<script>
+const API='https://gestionale-clienti-assicurati.onrender.com/api';
+let dati=[];
+let sortKey='nome',sortAsc=true;
+
+const $=q=>document.querySelector(q);
+const fmt=d=>new Date(d).toLocaleDateString();
+$('#tipologia').addEventListener('change',e=>{
+  $('#rc').classList.toggle('d-none',e.target.value!=='RC AUTO');
+  $('#rami').classList.toggle('d-none',e.target.value!=='ALTRI RAMI');
+});
+
+(async()=>{dati=await (await fetch(API+'/clienti')).json(); render();})();
+
+function render(arr=dati){
+  const body=$('#lista'); body.innerHTML='';
+  arr=[...arr].sort((a,b)=>a[sortKey]>b[sortKey]?(sortAsc?1:-1):a[sortKey]<b[sortKey]?(sortAsc?-1:1):0);
+  arr.forEach(c=>{
+    const g=(c.scadenza-Date.now())/864e5;
+    const tr=document.createElement('tr');
+    if(g<=30) tr.classList.add('table-warning');
+    tr.innerHTML=`
+      <td>${c.nome}</td>
+      <td>${c.cognome}</td>
+      <td>${c.cellulare}
+          <a class="whatsapp-icon" href="https://wa.me/39${c.cellulare}?text=${encodeURIComponent('La tua polizza è in scadenza, ti invitiamo in ufficio per visionare la nuova proposta!')}" target="_blank">🟢</a>
+      </td>
+      <td>${c.tipologia}</td>
+      <td>${fmt(c.scadenza)}</td>
+      <td>
+        <button class="btn btn-primary btn-sm" onclick='edit(${JSON.stringify(c)})'>Modifica</button>
+        <button class="btn btn-danger btn-sm" onclick="delCli('${c._id}')">X</button>
+      </td>`;
+    body.appendChild(tr);
+  });
+}
+
+function edit(c){
+  Object.entries(c).forEach(([k,v])=>$('#'+k)&&( $('#'+k).value=v ));
+  $('#rc').classList.toggle('d-none',c.tipologia!=='RC AUTO');
+  $('#rami').classList.toggle('d-none',c.tipologia!=='ALTRI RAMI');
+}
+
+async function delCli(id){
+  if(!confirm('Eliminare?'))return;
+  await fetch(API+'/clienti/'+id,{method:'DELETE'});
+  dati=dati.filter(c=>c._id!==id); render();
+}
+
+$('#form').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const f=e.target,_id=f._id.value,tip=f.tipologia.value;
+  const obj={
+    nome:f.nome.value,cognome:f.cognome.value,cellulare:f.cellulare.value,tipologia:tip,
+    inizio:new Date(f.inizio.value).getTime(),assicurazione:f.assicurazione.value,
+    azienda:f.azienda.value,premio:f.premio.value
+  };
+  if(tip==='RC AUTO'){
+    obj.targa=f.targa.value;obj.frazionamento=f.frazionamento.value;
+    const mesi=obj.frazionamento==='6'?6:12;
+    obj.scadenza=obj.inizio+mesi*30*86400000;
+  }else{
+    obj.dettaglio=f.dettaglio.value;obj.polizza=f.tipoPolizza.value;
+    const m=parseInt(f.scadenzaMesi.value)||12;
+    obj.scadenza=obj.inizio+m*30*86400000;
+    obj.note=f.note.value;obj.massimale=f.massimale.value;obj.attivita=f.tipoAttivita.value;
+  }
+  const res=await fetch(API+'/clienti'+(_id?'/'+_id:''),{
+    method:_id?'PUT':'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(obj)
+  });
+  const cli=await res.json();
+  dati=_id?dati.map(c=>c._id===cli._id?cli:c):[...dati,cli];
+  f.reset();render();
+});
+
+$$('th.sortable').forEach(th=>{
+  th.addEventListener('click',()=>{
+    const k=th.dataset.k; sortAsc=k===sortKey?!sortAsc:true; sortKey=k;
+    $$('th.sortable').forEach(t=>t.classList.remove('asc','desc'));
+    th.classList.add(sortAsc?'asc':'desc'); render();
+  });
+});
+
+$('#btnPDF').addEventListener('click',()=>{
+  const {jsPDF}=window.jspdf; const doc=new jsPDF();
+  doc.text('Clienti Assicurati',10,10);let y=20;
+  dati.forEach(c=>{doc.text(`${c.nome} ${c.cognome} | ${c.tipologia} | ${fmt(c.scadenza)}`,10,y);y+=8;if(y>280){doc.addPage();y=20;}});
+  doc.save('clienti.pdf');
+});
+</script>
 </body>
 </html>
