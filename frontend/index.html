@@ -59,7 +59,13 @@
       <!-- Campi ALTRI RAMI -->
       <div id="ramiFields" class="hidden row g-3">
         <div class="col-md-6"><input id="dettaglio" class="form-control" placeholder="Dettaglio"></div>
-        <div class="col-md-6"><input id="scadenzaMesi" type="number" class="form-control" placeholder="Scadenza (mesi)"></div>
+        <div class="col-md-6">
+          <select id="scadenzaMesi" class="form-select">
+            <option value="">Scadenza (mesi)</option>
+            <option>1</option><option>3</option><option>6</option><option>9</option><option>12</option>
+          </select>
+        </div>
+        <div class="col-md-6"><input id="tipoPolizza" class="form-control" placeholder="Tipologia Polizza"></div>
         <div class="col-md-6"><input id="note" class="form-control" placeholder="Note"></div>
         <div class="col-md-6"><input id="massimale" class="form-control" placeholder="Massimale"></div>
         <div class="col-md-6"><input id="tipoAttivita" class="form-control" placeholder="Tipologia Attività"></div>
@@ -102,44 +108,15 @@
 
 <script>
 const API = 'https://gestionale-clienti-assicurati.onrender.com/api';
-const WHATSAPP_FROM = '393209717165';
-const MSG_BASE = 'La tua polizza è in scadenza, ti invitiamo in ufficio per visionare la nuova proposta!';
-let clienti = [], sendingLog=[]; let sortKey='nome', sortAsc=true;
-const $ = s=>document.querySelector(s);
+let clienti=[];let sendingLog=[];let sortKey='nome',sortAsc=true;
+const $=s=>document.querySelector(s);
 function fmt(d){return new Date(d).toLocaleDateString();}
-function days(d){return Math.ceil((d-Date.now())/86400000);}  
-
-// INIT
-window.addEventListener('DOMContentLoaded', load);
-async function load(){
-  const res = await fetch(`${API}/clienti`); clienti = await res.json(); render();}
-
-// FORM HANDLER
-$('#tipologia').addEventListener('change',e=>{
-  $('#rcFields').classList.add('hidden'); $('#ramiFields').classList.add('hidden');
-  if(e.target.value==='RC AUTO') $('#rcFields').classList.remove('hidden');
-  if(e.target.value==='ALTRI RAMI') $('#ramiFields').classList.remove('hidden');
+function days(d){return Math.ceil((d-Date.now())/86400000);}
+// Rimuoviamo auth da backend: assicurati che su server/routes/clienti.js sia COMMENTATO router.use(authMiddleware);
+window.addEventListener('DOMContentLoaded',load);
+async function load(){const r=await fetch(`${API}/clienti`);clienti=await r.json();render();}
+$('#tipologia').addEventListener('change',e=>{$('#rcFields').classList.add('hidden');$('#ramiFields').classList.add('hidden');if(e.target.value==='RC AUTO')$('#rcFields').classList.remove('hidden');if(e.target.value==='ALTRI RAMI')$('#ramiFields').classList.remove('hidden');});
+$('#formCliente').addEventListener('submit',async e=>{e.preventDefault();const f=e.target;const o={nome:f.nome.value,cognome:f.cognome.value,cellulare:f.cellulare.value,tipologia:f.tipologia.value,inizio:new Date(f.inizio.value).getTime(),assicurazione:f.assicurazione.value,azienda:f.azienda.value,premio:f.premio.value};if(o.tipologia==='RC AUTO'){o.targa=f.targa.value;o.frazionamento=f.frazionamento.value;const m=parseInt(o.frazionamento)||12;o.scadenza=o.inizio+m*30*86400000;}else{o.dettaglio=f.dettaglio.value;o.polizza=f.tipoPolizza.value;o.scadenza=o.inizio+(parseInt(f.scadenzaMesi.value)||12)*30*86400000;o.note=f.note.value;o.massimale=f.massimale.value;o.attivita=f.tipoAttivita.value;}
+  const res=await fetch(`${API}/clienti`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(o)});if(res.ok){clienti.push(await res.json());render();f.reset();$('#rcFields').classList.add('hidden');$('#ramiFields').classList.add('hidden');}
 });
-$('#formCliente').addEventListener('submit',async e=>{
-  e.preventDefault();
-  const f=e.target; const obj={
-    nome:f.nome.value,cognome:f.cognome.value,cellulare:f.cellulare.value,
-    tipologia:f.tipologia.value,inizio:new Date(f.inizio.value).getTime(),
-    assicurazione:f.assicurazione.value,azienda:f.azienda.value,premio:f.premio.value
-  };
-  if(obj.tipologia==='RC AUTO'){
-    obj.targa=f.targa.value; obj.frazionamento=f.frazionamento.value;
-    const mesi=parseInt(obj.frazionamento)||12; obj.scadenza=obj.inizio+mesi*30*86400000;
-  }else{
-    obj.dettaglio=f.dettaglio.value; obj.scadenza=obj.inizio+parseInt(f.scadenzaMesi.value||12)*30*86400000;
-    obj.note=f.note.value; obj.massimale=f.massimale.value; obj.attivita=f.tipoAttivita.value;
-  }
-  const res=await fetch(`${API}/clienti`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(obj)});
-  if(res.ok){clienti.push(await res.json()); render(); f.reset(); $('#rcFields').classList.add('hidden'); $('#ramiFields').classList.add('hidden');}
-});
-
-// RENDER TABLE & DASHBOARD
-function render(list=clienti){
-  const tbody=$('#tbl tbody'); tbody.innerHTML='';
-  list=[...list].sort((a,b)=>{if(a[sortKey]>b[sortKey])return sortAsc?1:-1; if(a[sortKey]<b[sortKey])return sortAsc?-1:1; return 0;});
-  list.for
+function render(list=clienti){const tbody=$('#tbl tbody');tbody.innerHTML='';list=[...list].sort((a,b)=>{if(a[
