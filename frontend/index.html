@@ -1,122 +1,81 @@
-<!DOCTYPE html>
-<html lang="it">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gestionale Clienti Assicurati</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-  <style>
-    body{background:#f5f9ff;color:#003366;padding:2rem;font-family:'Segoe UI',sans-serif}
-    h1{color:#ff6600}
-    .section{background:#fff;border-radius:1rem;padding:2rem;margin-bottom:2rem;box-shadow:0 0 10px rgba(0,0,0,.1)}
-    .btn-orange{background:#ff6600;color:#fff}.btn-orange:hover{background:#e65c00}
-    .hidden{display:none}
-    .whatsapp-icon{color:#25D366;cursor:pointer;font-size:1.3rem}
-    .sortable{cursor:pointer}
-    .dashboard .card{background:#f0f6ff;border:none;border-left:5px solid #ff6600}
-  </style>
-</head>
-<body>
-<div class="container">
-  <h1 class="mb-4">Gestionale Clienti Assicurati</h1>
-
-  <!-- DASHBOARD -->
-  <div class="dashboard row text-center section">
-    <div class="col-md-4"><div class="card p-3"><h6>Totale Clienti</h6><h2 id="tot-clienti">0</h2></div></div>
-    <div class="col-md-4"><div class="card p-3"><h6>In Scadenza 30 gg</h6><h2 id="tot-scadenza">0</h2></div></div>
-    <div class="col-md-4"><div class="card p-3"><h6>Premi Lordi (€)</h6><h2 id="tot-premio">0</h2></div></div>
-  </div>
-
-  <!-- FORM -->
-  <div class="section">
-    <form id="formCliente" class="row g-3">
-      <div class="col-md-6"><input id="nome" class="form-control" placeholder="Nome" required></div>
-      <div class="col-md-6"><input id="cognome" class="form-control" placeholder="Cognome" required></div>
-      <div class="col-md-6"><input id="cellulare" class="form-control" placeholder="Cellulare (senza +)" required></div>
-      <div class="col-md-6">
-        <select id="tipologia" class="form-select" required>
-          <option value="">Tipologia...</option>
-          <option value="RC AUTO">RC AUTO</option>
-          <option value="ALTRI RAMI">ALTRI RAMI</option>
-        </select>
-      </div>
-
-      <!-- Campi RC AUTO -->
-      <div id="rcFields" class="hidden row g-3">
-        <div class="col-md-6"><input id="targa" class="form-control" placeholder="Targa"></div>
-        <div class="col-md-6">
-          <select id="frazionamento" class="form-select">
-            <option value="">Frazionamento...</option>
-            <option value="6">6 mesi</option>
-            <option value="12">12 mesi</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- Campi ALTRI RAMI -->
-      <div id="ramiFields" class="hidden row g-3">
-        <div class="col-md-6"><input id="dettaglio" class="form-control" placeholder="Dettaglio"></div>
-        <div class="col-md-6">
-          <select id="scadenzaMesi" class="form-select">
-            <option value="">Scadenza (mesi)</option>
-            <option>1</option><option>3</option><option>6</option><option>9</option><option>12</option>
-          </select>
-        </div>
-        <div class="col-md-6"><input id="tipoPolizza" class="form-control" placeholder="Tipologia Polizza"></div>
-        <div class="col-md-6"><input id="note" class="form-control" placeholder="Note"></div>
-        <div class="col-md-6"><input id="massimale" class="form-control" placeholder="Massimale"></div>
-        <div class="col-md-6"><input id="tipoAttivita" class="form-control" placeholder="Tipologia Attività"></div>
-      </div>
-
-      <div class="col-md-6"><input id="inizio" type="date" class="form-control" placeholder="Inizio copertura" required></div>
-      <div class="col-md-6"><input id="assicurazione" class="form-control" placeholder="Assicurazione"></div>
-      <div class="col-md-6"><input id="azienda" class="form-control" placeholder="Azienda"></div>
-      <div class="col-md-6"><input id="premio" type="number" step="0.01" class="form-control" placeholder="Premio Lordo"></div>
-      <div class="col-12"><button class="btn btn-orange" type="submit">Salva Cliente</button></div>
-    </form>
-  </div>
-
-  <!-- ACTIONS -->
-  <div class="section d-flex flex-wrap gap-3 justify-content-between">
-    <div class="d-flex flex-column gap-2">
-      <button class="btn btn-orange" id="btnScadenza">In Scadenza (30 giorni)</button>
-      <button class="btn btn-secondary" id="btnMsgs">Messaggi Inviati</button>
-      <input id="search" placeholder="Cerca..." class="form-control">
-    </div>
-    <div class="d-flex flex-column gap-2">
-      <button class="btn btn-outline-primary" id="btnCSV">Esporta CSV</button>
-      <button class="btn btn-outline-secondary" id="btnPDF">Riepilogo PDF</button>
-    </div>
-  </div>
-
-  <!-- TABLE -->
-  <div class="section p-0">
-    <table class="table table-striped mb-0" id="tbl">
-      <thead class="table-light"><tr>
-        <th class="sortable" data-k="nome">Nome ▲▼</th>
-        <th class="sortable" data-k="cognome">Cognome ▲▼</th>
-        <th class="sortable" data-k="tipologia">Tipologia ▲▼</th>
-        <th class="sortable" data-k="scadenza">Scadenza ▲▼</th>
-        <th>Azioni</th></tr></thead>
-      <tbody></tbody>
-    </table>
-  </div>
-</div>
-
 <script>
 const API = 'https://gestionale-clienti-assicurati.onrender.com/api';
 let clienti=[];let sendingLog=[];let sortKey='nome',sortAsc=true;
 const $=s=>document.querySelector(s);
 function fmt(d){return new Date(d).toLocaleDateString();}
 function days(d){return Math.ceil((d-Date.now())/86400000);}
-// Rimuoviamo auth da backend: assicurati che su server/routes/clienti.js sia COMMENTATO router.use(authMiddleware);
+
 window.addEventListener('DOMContentLoaded',load);
-async function load(){const r=await fetch(`${API}/clienti`);clienti=await r.json();render();}
-$('#tipologia').addEventListener('change',e=>{$('#rcFields').classList.add('hidden');$('#ramiFields').classList.add('hidden');if(e.target.value==='RC AUTO')$('#rcFields').classList.remove('hidden');if(e.target.value==='ALTRI RAMI')$('#ramiFields').classList.remove('hidden');});
-$('#formCliente').addEventListener('submit',async e=>{e.preventDefault();const f=e.target;const o={nome:f.nome.value,cognome:f.cognome.value,cellulare:f.cellulare.value,tipologia:f.tipologia.value,inizio:new Date(f.inizio.value).getTime(),assicurazione:f.assicurazione.value,azienda:f.azienda.value,premio:f.premio.value};if(o.tipologia==='RC AUTO'){o.targa=f.targa.value;o.frazionamento=f.frazionamento.value;const m=parseInt(o.frazionamento)||12;o.scadenza=o.inizio+m*30*86400000;}else{o.dettaglio=f.dettaglio.value;o.polizza=f.tipoPolizza.value;o.scadenza=o.inizio+(parseInt(f.scadenzaMesi.value)||12)*30*86400000;o.note=f.note.value;o.massimale=f.massimale.value;o.attivita=f.tipoAttivita.value;}
-  const res=await fetch(`${API}/clienti`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(o)});if(res.ok){clienti.push(await res.json());render();f.reset();$('#rcFields').classList.add('hidden');$('#ramiFields').classList.add('hidden');}
+async function load(){
+  try {
+    const r = await fetch(`${API}/clienti`);
+    if (!r.ok) throw new Error('Errore nel caricamento dei clienti');
+    clienti = await r.json();
+    render();
+  } catch (err) {
+    console.error('Errore nel load():', err);
+    alert('Errore nel caricamento dei clienti. Controlla la console.');
+  }
+}
+
+$('#tipologia').addEventListener('change',e=>{
+  $('#rcFields').classList.add('hidden');
+  $('#ramiFields').classList.add('hidden');
+  if(e.target.value==='RC AUTO') $('#rcFields').classList.remove('hidden');
+  if(e.target.value==='ALTRI RAMI') $('#ramiFields').classList.remove('hidden');
 });
-function render(list=clienti){const tbody=$('#tbl tbody');tbody.innerHTML='';list=[...list].sort((a,b)=>{if(a[
+
+$('#formCliente').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const f = e.target;
+  const o = {
+    nome: f.nome.value,
+    cognome: f.cognome.value,
+    cellulare: f.cellulare.value,
+    tipologia: f.tipologia.value,
+    inizio: new Date(f.inizio.value).getTime(),
+    assicurazione: f.assicurazione.value,
+    azienda: f.azienda.value,
+    premio: f.premio.value
+  };
+
+  if(o.tipologia==='RC AUTO'){
+    o.targa = f.targa.value;
+    o.frazionamento = f.frazionamento.value;
+    const m = parseInt(o.frazionamento)||12;
+    o.scadenza = o.inizio + m*30*86400000;
+  } else {
+    o.dettaglio = f.dettaglio.value;
+    o.polizza = f.tipoPolizza.value;
+    o.scadenza = o.inizio + (parseInt(f.scadenzaMesi.value)||12)*30*86400000;
+    o.note = f.note.value;
+    o.massimale = f.massimale.value;
+    o.attivita = f.tipoAttivita.value;
+  }
+
+  try {
+    const res = await fetch(`${API}/clienti`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(o)
+    });
+
+    if (!res.ok) {
+      const error = await res.json();
+      console.error('Errore salvataggio:', error);
+      alert('Errore nel salvataggio del cliente: ' + (error.message || 'Verifica la console.'));
+      return;
+    }
+
+    const nuovoCliente = await res.json();
+    clienti.push(nuovoCliente);
+    render();
+    f.reset();
+    $('#rcFields').classList.add('hidden');
+    $('#ramiFields').classList.add('hidden');
+  } catch (err) {
+    console.error('Errore nella POST:', err);
+    alert('Errore di rete o server durante il salvataggio.');
+  }
+});
+</script>
